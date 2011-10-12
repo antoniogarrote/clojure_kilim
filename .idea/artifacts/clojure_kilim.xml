@@ -1,0 +1,12 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="clojure_kilim">
+    <output-path>$PROJECT_DIR$/out/artifacts/clojure_kilim</output-path>
+    <root id="archive" name="clojure_kilim.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
+      </element>
+      <element id="module-output" name="kilim_clojure" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../clojure/deps/kilim.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

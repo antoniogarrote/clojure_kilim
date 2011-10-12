@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Kilim">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../clojure/deps" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/../clojure/deps" recursive="false" />
+  </library>
+</component>

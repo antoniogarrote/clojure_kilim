@@ -2527,7 +2527,7 @@ $(document).ready(function() {
 
 })
 </script><title>clj-kilim -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">clj-kilim</h1><h2 class="project-version">0.2.0-SNAPSHOT</h2><br /><p>Kilim threads integration library</p>
-</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.3.0</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#kilim">kilim</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#kilim" name="kilim"><h1 class="project-name">kilim</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><h2>Enabling Kilim threads in Clojure</h2>
+</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.3.0</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table><tr><td class="dep-name">lein-marginalia</td><td class="dotted"><hr /></td><td class="dep-version">0.6.0</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#kilim">kilim</a></li><li><a href="#kilim.nio">kilim.nio</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#kilim" name="kilim"><h1 class="project-name">kilim</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><h2>Enabling Kilim threads in Clojure</h2>
 </td><td class="codes" /></tr><tr><td class="docs"><p><a href="http://www.malhar.net/sriram/kilim/">Kilim</a> is a framework that can be used to build applications where thousands
 of lightweight threads known as Kilim tasks are being executed concurrently.
 This is possible thanks to a bytecode transformation performed by Kilim where a <code>Fiber</code> object, containing
@@ -2543,171 +2543,229 @@ weaver and started later as concurrent Kilim tasks.</p>
 
 <p>Kilim also include a <code>Mailbox</code> object that can be used to exchange without copy messages between Kilim tasks and
 Java threads as well as a collection of additonal features built on top of these basic objects.</p>
-</td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes" /><pre class="brush: clojure">(ns kilim
   (:import [clojure.asm Type]))</pre></tr><tr><td class="docs"><h2>Debug</h2>
+</td><td class="codes" /></tr><tr><td class="docs"><p>Turns on/off debug messages from the instrumentation agent. By defult it is turned off.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn kilim-debug
-  &quot;Turns on/off debug messages from the instrumentation agent. By defult it is turned off.&quot;
-  [should-debug] (clojure.kilim.KilimTransformerAgent/setDebugging should-debug))</pre></tr><tr><td class="docs"><h2>Pausable Tasks</h2>
-</td><td class="codes" /></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro pausable
-  &quot;Defines a new pausable lambda function.
+  [should-debug]
+  (clojure.kilim.KilimTransformerAgent/setDebugging should-debug))</pre></tr><tr><td class="docs"><h2>Pausable Tasks</h2>
+</td><td class="codes" /></tr><tr><td class="docs"><p>Defines a new pausable lambda function.
    If the function is defined without arguments, it can be started as a new Kilim task using
    the function task-start.
    Pausable function can only be invoked by other pausable functions. The function call-pausable
-   mut be used for these invocations instead of regular function application.&quot;
-  [&amp; body] (let [nfn (gensym &quot;pausable__fn__&quot;)]
-             (clojure.kilim.KilimTransformerAgent/setNextFunctionToWeave (.replace (str nfn) &quot;-&quot; &quot;_&quot;))
-             (clojure.kilim.KilimTransformerAgent/setKindOfTransformation &quot;task&quot;)
-             `(do
-                (def ~nfn (fn ~@body))
-                ~nfn)))</pre></tr><tr><td class="docs">
+   mut be used for these invocations instead of regular function application.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro pausable
+  [&amp; body]
+  ;; we need to notify the agent which class needs to be transformed,
+  ;; with this code we generate the symbol for the new function and
+  ;; notify the agent
+  (let [nfn (gensym &quot;pausable__fn__&quot;)]
+    (clojure.kilim.KilimTransformerAgent/setNextFunctionToWeave (.replace (str nfn) &quot;-&quot; &quot;_&quot;))
+    (clojure.kilim.KilimTransformerAgent/setKindOfTransformation &quot;task&quot;)
+    `(do
+       (def ~nfn (fn ~@body))
+       ~nfn)))</pre></tr><tr><td class="docs"><p>Defines a new named pausable function.
+   Check the documentation of pausable for details about the invocation and use of this function.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defmacro def-pausable
-  &quot;Defines a new named pausable function.
-   Check the documentation of pausable for details about the invocation and use of this function.&quot;
   [name &amp; rest] (do (clojure.kilim.KilimTransformerAgent/setNextFunctionToWeave (.replace (str name) &quot;-&quot; &quot;_&quot;))
                   (clojure.kilim.KilimTransformerAgent/setKindOfTransformation &quot;task&quot;)
-                  `(defn ~name ~@rest)))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro generator
-  &quot;Defines a new lambda function as a Kilim generator.
+                  `(defn ~name ~@rest)))</pre></tr><tr><td class="docs"><p>Invokes the pausable function whose name and arguments are passed as arguments to this function.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro call-pausable
+  [&amp; rest] `(.invokeTask ~@rest))</pre></tr><tr><td class="docs"><p>Starts the execution of a new Kilim task. A task object is returned that can be used in additional calls
+   like task-id to retrieve the task identifier or task-infor-on-exit to associate a mailbox that will be
+   notified when the task ends its execution, etc.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn task-start
+  [^kilim.Task task] (.start task))</pre></tr><tr><td class="docs"><p>Returns the identifier of a Kilim task being executed.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro task-id
+  [task] `(.id ~task))</pre></tr><tr><td class="docs"><p>This function will finish the execution of a Kilim task with the provided exit value.
+   This value will be inserted in the mailbox provided in the task-infor-on-exit function if this
+   function was invoked.
+   This value can be retrieved later using the task-return-value function.
+   The exit message will also include the task id information.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro task-return
+  [exit-value] `(kilim.Task/exit ~exit-value))</pre></tr><tr><td class="docs"><p>Extracts the return value from an exit message returned from a Kilim task using the task-return function.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro task-return-value
+  [result] `(.result ~result))</pre></tr><tr><td class="docs"><p>Extracts the task id information from an exit message returned from a Kilim task using the task-return function.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro task-return-id
+  [result] `(.. ~result task id))</pre></tr><tr><td class="docs"><p>Associates a mailbox to a task that will receive an exit message from the task when it finished its execution.
+   If the task invokes the task-return function, that value and task-id will be the content of the message, otherwise
+   the 'ok' string and the task id will be inserted by default.
+   The function can be invoked many times with different mailboxes and they will all get the exit message.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn task-inform-on-exit
+  [^kilim.Task task ^kilim.Mailbox mbox] (.informOnExit task mbox) task)</pre></tr><tr><td class="docs"><p>Pauses the execution of a kilim task for the provided number of milliseconds</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro task-sleep
+  [millisecs] `(kilim.Task/sleep ~millisecs))</pre></tr><tr><td class="docs"><h2>Generators</h2>
+</td><td class="codes" /></tr><tr><td class="docs"><p>Defines a new lambda function as a Kilim generator.
    Generators can be used perform computations in several steps that can be yield and then recovered in other
    Kilim task or Java thread.
    Generator functions must accept a single argument, the instance of the generator being executed.
    Generators must be started using the generator-start function. The generator function can return new
    computed values using the generator-yield function. Other functions can retrieve the next result yielded
-   by the generator using the generator-next function.&quot;
+   by the generator using the generator-next function.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro generator
   [args &amp; body] (let [nfn (gensym &quot;pausable__fn__&quot;)
                       orig-g (first args)]
                   (clojure.kilim.KilimTransformerAgent/setNextFunctionToWeave (.replace (str nfn) &quot;-&quot; &quot;_&quot;))
                   (clojure.kilim.KilimTransformerAgent/setKindOfTransformation &quot;generator&quot;)
                   `(fn []
                      (def ~nfn (fn [g#] (let [~orig-g (cast clojure.lang.AGeneratorFunction g#)] ~@body)))
-                     ~nfn)))</pre></tr><tr><td class="docs">
+                     ~nfn)))</pre></tr><tr><td class="docs"><p>Defines a named function as a Kilim generator. Check the documentation of generator for details about
+   the invocation and use of this function.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defmacro def-generator
-  &quot;Defines a named function as a Kilim generator. Check the documentation of generator for details about
-   the invocation and use of this function.&quot;
-  [name &amp; rest] `(def ~name (generator ~@rest)))</pre></tr><tr><td class="docs">
+  [name &amp; rest] `(def ~name (generator ~@rest)))</pre></tr><tr><td class="docs"><p>Starts the execution of a new generator, results yielded from this generator can be retrieved passing the
+   value returned by this function to the generator-next function.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defmacro generator-start
-  &quot;Starts the execution of a new generator, results yielded from this generator can be retrieved passing the
-   value returned by this function to the generator-next function.&quot;
-  [g] `(~g))</pre></tr><tr><td class="docs">
+  [g] `(~g))</pre></tr><tr><td class="docs"><p>Wraps a generator in a Clojure's lazy sequence. The single argument of this function must be a generator
+   function that will be started by the generator-seq function.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn generator-seq
-  &quot;Wraps a generator in a Clojure's lazy sequence. The single argument of this function must be a generator
-   function that will be started by the generator-seq function.&quot;
-  ([f]
-     (letfn [(next-value [g] (let [next (.next g)] (if (nil? next) next (lazy-cat (list next) (next-value g)))))]
-       (let [g (generator-start f)
-             first-value (let [v (.next g)] (if (nil? v) v (list v)))]
-         (lazy-cat
-          first-value
-          (next-value g))))))</pre></tr><tr><td class="docs">
+  [f] (letfn [(next-value [g] (let [next (.next g)] (if (nil? next)
+                                                      next
+                                                      (lazy-cat (list next) (next-value g)))))]
+        (let [g (generator-start f)
+              first-value (let [v (.next g)] (if (nil? v) v (list v)))]
+          (lazy-cat
+           first-value
+           (next-value g)))))</pre></tr><tr><td class="docs"><p>Yields a new value as a result of this generator.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defmacro generator-yield
-  &quot;Yields a new value as a result of this generator.&quot;
-  [g data] `(. ~g yield ~data))</pre></tr><tr><td class="docs">
+  [g data] `(. ~g yield ~data))</pre></tr><tr><td class="docs"><p>Retrieves the next value yielded by this generator. If all values have been yielded, an additional nil value will be
+   returned. All additional calls to generator-next will throw an exception.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defmacro generator-next
-  &quot;Retrieves the next value yielded by this generator. If all values have been yielded, an additional nil value will be
-   returned. All additional calls to generator-next will throw an exception.&quot;
-  [g] `(.next ~g))</pre></tr><tr><td class="docs">
+  [g] `(.next ~g))</pre></tr><tr><td class="docs"><h2>Mailboxes</h2>
+</td><td class="codes" /></tr><tr><td class="docs"><p>Creates a new Kilim mailbox that can be used for inter task or thread/task communication.
+   Mailboxes must have only one reader, but they can have multiple writers.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defmacro make-mbox
-  &quot;Creates a new Kilim mailbox that can be used for inter task or thread/task communication.
-   Mailboxes must have only one reader, but they can have multiple writers.&quot;
-  [] `(kilim.Mailbox.))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro call-pausable
-  &quot;Invokes the pausable function whose name and arguments are passed as arguments to this function.&quot;
-  [&amp; rest] `(.invokeTask ~@rest))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro mbox-get-pausable
-  &quot;Tries to retrieve a message from a mailbox, pausing the calling Kilim task if no message is available.
+  [] `(kilim.Mailbox.))</pre></tr><tr><td class="docs"><p>Tries to retrieve a message from a mailbox, pausing the calling Kilim task if no message is available.
    The function is pausable so it can only be invoked within a pausable function.
-   Blocking reception of messages from a Java thread can be accomplished using the mbox-get-blocking function.&quot;
+   Blocking reception of messages from a Java thread can be accomplished using the mbox-get-blocking function.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro mbox-get-pausable
   [mbox] `(let [m# (cast kilim.Mailbox ~mbox)]
-            (.get m#)))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro mbox-get-blocking
-  &quot;Tries to retrieve a message from a mailbox, pausing the calling Java thread if no message is available.
+            (.get m#)))</pre></tr><tr><td class="docs"><p>Tries to retrieve a message from a mailbox, pausing the calling Java thread if no message is available.
    The function is not pausable so it can be invoked from regular functions. Kilim task must call the
-   pausable version, since invoking this function will block the scheduler thread instead of the task.&quot;
+   pausable version, since invoking this function will block the scheduler thread instead of the task.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro mbox-get-blocking
   [mbox] `(let [m# (cast kilim.Mailbox ~mbox)]
-            (.getb m#)))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro mbox-get
-  &quot;Tries to retrieve a message from a message box without blocking the calling thread or pausing the
+            (.getb m#)))</pre></tr><tr><td class="docs"><p>Tries to retrieve a message from a message box without blocking the calling thread or pausing the
    the calling kilim Task.
    It is not a pausable function, so it can be invoked from regular functions.
-   It returns the received message, if any available, or nil.&quot;
+   It returns the received message, if any available, or nil.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro mbox-get
   [mbox] `(let [m# (cast kilim.Mailbox ~mbox)]
-            (.getb m#)))</pre></tr><tr><td class="docs">
+            (.getb m#)))</pre></tr><tr><td class="docs"><p>Inserts a new message in the selected mailbox and returns immediately without pausing or blocking.
+   The function can be invoked safely form pausable and regular functions.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn mbox-put
-  &quot;Inserts a new message in the selected mailbox and returns immediately without pausing or blocking.
-   The function can be invoked safely form pausable and regular functions.&quot;
-  [^kilim.Mailbox mbox msg] (.putnb mbox msg))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro mbox-put-pausable
-  &quot;Pausable version of the put operation. It pauses the the calling Kilim task until there is space in the
+  [^kilim.Mailbox mbox msg] (.putnb mbox msg))</pre></tr><tr><td class="docs"><p>Pausable version of the put operation. It pauses the the calling Kilim task until there is space in the
    mailbox to insert the message.
    This is is a pausable function that can only be invoked from pausable functions. Java threads should use
-   the blocking version: mbox-put-blocking.&quot;
-  [mbox data] `(.put ~mbox ~data))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro mbox-put-blocking
-  &quot;Blocking version of the put operation. It blocks the calling Java thread until thres is space in the
+   the blocking version: mbox-put-blocking.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro mbox-put-pausable
+  [mbox data] `(.put ~mbox ~data))</pre></tr><tr><td class="docs"><p>Blocking version of the put operation. It blocks the calling Java thread until thres is space in the
    mailbox to insert the message.
    This function must not be invoked by Kilim tasks since it will block the scheduler thread. The pausable
-   version mbox-put-pausable must be used instead.&quot;
-  [mbox data] `(.putb ~mbox ~data))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defn task-start
-  &quot;Starts the execution of a new Kilim task. A task object is returned that can be used in additional calls
-   like task-id to retrieve the task identifier or task-infor-on-exit to associate a mailbox that will be
-   notified when the task ends its execution, etc.&quot;
-  [^kilim.Task task] (.start task))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro task-id
-  &quot;Returns the identifier of a Kilim task being executed.&quot;
-  [task] `(.id ~task))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro task-return
-  &quot;This function will finish the execution of a Kilim task with the provided exit value.
-   This value will be inserted in the mailbox provided in the task-infor-on-exit function if this
-   function was invoked.
-   This value can be retrieved later using the task-return-value function.
-   The exit message will also include the task id information.&quot;
-  [exit-value] `(kilim.Task/exit ~exit-value))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro task-return-value
-  &quot;Extracts the return value from an exit message returned from a Kilim task using the task-return function.&quot;
-  [result] `(.result ~result))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro task-return-id
-  &quot;Extracts the task id information from an exit message returned from a Kilim task using the task-return function.&quot;
-  [result] `(.. ~result task id))</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defn task-inform-on-exit
-  &quot;Associates a mailbox to a task that will receive an exit message from the task when it finished its execution.
-   If the task invokes the task-return function, that value and task-id will be the content of the message, otherwise
-   the 'ok' string and the task id will be inserted by default.
-   The function can be invoked many times with different mailboxes and they will all get the exit message.&quot;
-  [^kilim.Task task ^kilim.Mailbox mbox] (.informOnExit task mbox) task)</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defmacro task-sleep
-  &quot;Pauses the execution of a kilim task for the provided number of milliseconds&quot;
-  [millisecs] `(kilim.Task/sleep ~millisecs))</pre></tr><tr><td class="docs">
+   version mbox-put-pausable must be used instead.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defmacro mbox-put-blocking
+  [mbox data] `(.putb ~mbox ~data))</pre></tr><tr><td class="docs"><h2>Task groups</h2>
+</td><td class="codes" /></tr><tr><td class="docs"><p>Creates a TaskGroup that can be used to control the execution of a set of Kilim tasks.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defmacro make-task-group
-  &quot;Creates a TaskGroup that can be used to control the execution of a set of Kilim tasks.&quot;
-  [] `(kilim.TaskGroup.))</pre></tr><tr><td class="docs">
+  [] `(kilim.TaskGroup.))</pre></tr><tr><td class="docs"><p>Adds a new task to the task group. The task must have already been started.
+   The function returns the task group passed as the first argument.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn task-group-add
-  &quot;Adds a new task to the task group. The task must have already been started.
-   The function returns the task group passed as the first argument.&quot;
   [^kilim.TaskGroup task-group ^kilim.Task task] (.add task-group task)
-                                                  task-group)</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defn task-group-join-blocking
-  &quot;Blocks the execution of the current thread until all the Kilim tasks in the group have finished their
+                                                  task-group)</pre></tr><tr><td class="docs"><p>Blocks the execution of the current thread until all the Kilim tasks in the group have finished their
    execution.
    This function must not be invoked by Kilim tasks since it will blocked the scheduler thread, task-group-join-pausable
    can be used instead.
-   The function returns the task group passsed as ther first argument.&quot;
+   The function returns the task group passsed as ther first argument.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn task-group-join-blocking
   [^kilim.TaskGroup task-group] (.joinb task-group)
-                                task-group)</pre></tr><tr><td class="docs">
-</td><td class="codes" /><pre class="brush: clojure">(defn task-group-join-pausable
-  &quot;Pauses the execution of the current Kilim task until all the Kilim tasks in the group have finished their
+                                task-group)</pre></tr><tr><td class="docs"><p>Pauses the execution of the current Kilim task until all the Kilim tasks in the group have finished their
    execution.
    This function is pausable and must be invoked only from pausable methods. Regular function being executed in a
    Java thread can invoke the blocking variant, task-group-join-blocking.
-   The function returns the task group passsed as ther first argument.&quot;
+   The function returns the task group passsed as ther first argument.</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn task-group-join-pausable
   [^kilim.TaskGroup task-group] (.joinb task-group)
-                                task-group)</pre></tr><tr><td class="docs">
+                                task-group)</pre></tr><tr><td class="docs"><p>Returns a map with the results emmited by a task group. The keys of the map are the task ids and the
+   values the returned value.</p>
 </td><td class="codes" /><pre class="brush: clojure">(defn task-group-results
-  &quot;Returns a map with the results emmited by a task group. The keys of the map are the task ids and the
-   values the returned value.&quot;
   [^kilim.TaskGroup task-group] (reduce (fn [^clojure.lang.PersistentArrayMap acum ^kilim.ExitMsg result]
                                           (assoc acum (task-return-id result) (task-return-value result)))
-                                  {} (.results task-group)))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a><div id="floating-toc"><ul><li class="floating-toc-li" id="floating-toc_kilim">kilim</li></ul></div></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
+                                  {} (.results task-group)))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#kilim.nio" name="kilim.nio"><h1 class="project-name">kilim.nio</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Kilim includes some classes supporting asynchronous input-output
+using Java NIO selectors.
+Functions in this namespace wrap this functionality for TCP sockets
+and HTTP servers.</p>
+</td><td class="codes" /><pre class="brush: clojure">(ns kilim.nio
+  (:import [clojure.asm ClassWriter Type Opcodes ClassVisitor]
+           [java.lang.reflect Modifier Constructor]
+           [clojure.asm.commons Method GeneratorAdapter]
+           [clojure.lang DynamicClassLoader]
+           [kilim Mailbox Pausable Task]))</pre></tr><tr><td class="docs"><p>Builds a java array of types</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn- to-types
+  ([cs] (if (pos? (count cs))
+          (into-array (map (fn [^Class c] (. Type (getType c))) cs))
+          (make-array Type 0))))</pre></tr><tr><td class="docs"><p>Accepts a pausable function that will be used as the handler of incoming HTTP connections</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn http-handler
+  ([^clojure.lang.ITaskFn fn]
+     (let [cv (new ClassWriter (. ClassWriter COMPUTE_MAXS))
+           cname (str &quot;clojure/lang/&quot; (gensym &quot;KilimHTTPProxy__&quot;))
+           ctype (. Type (getObjectType cname))
+           super kilim.http.HttpSession
+           super-type (. Type (getType kilim.http.HttpSession))
+           itaskfn-type (. Type (getType clojure.lang.ITaskFn))
+           ataskfn-type (. Type (getType clojure.lang.ATaskFn))
+           ifn-type (. Type (getType clojure.lang.IFn))
+           kilim-session-type (. Type (getType kilim.http.HttpSession))
+           pausable-type (. Type (getType kilim.Pausable))
+           className (.getName (class fn))
+           fn-type (. Type (getType (Class/forName className)))
+           obj-type (. Type (getType Object))
+           pausable-exceptions (into-array (list pausable-type (. Type (getType java.lang.Exception))))]
+       ;; declare class
+       (. cv (visit (. Opcodes V1_5) ; version
+                    (+ (. Opcodes ACC_PUBLIC) (. Opcodes ACC_SUPER)) ; access
+                    cname ; name
+                    nil ; signature
+                    &quot;kilim/http/HttpSession&quot; ; supername
+                    (make-array String 0);interfaces))
+       ;; generate constructors
+       (doseq [^Constructor ctor (. super (getDeclaredConstructors))]
+         (when-not (. Modifier (isPrivate (. ctor (getModifiers))))
+           (let [ptypes (to-types (. ctor (getParameterTypes)))
+                 m (new Method &quot;&lt;init&gt;&quot; (. Type VOID_TYPE) ptypes)
+                 gen (new GeneratorAdapter (. Opcodes ACC_PUBLIC) m nil nil cv)]
+             (. gen (visitCode))
+             ;call super ctor
+             (. gen (loadThis))
+             (. gen (dup))
+             (. gen (loadArgs))
+             (. gen (invokeConstructor super-type m))
+             (. gen (returnValue))
+             (. gen (endMethod)))))
+       ;; generate execute method
+       (let [m (. Method (getMethod &quot;void execute()&quot;))
+             gen (new GeneratorAdapter (. Opcodes ACC_PUBLIC) m nil pausable-exceptions cv)]
+         (. gen (visitCode))
+         ; build instance of the function class
+         (. gen (newInstance fn-type))
+         (. gen (dup))
+         (. gen (invokeConstructor fn-type (new Method &quot;&lt;init&gt;&quot; (. Type VOID_TYPE) (make-array Type 0))))
+         ; invoke invokeTask passing 'this' as an argument
+         (. gen (checkCast itaskfn-type))
+         (. gen (loadThis))
+         (. gen (checkCast kilim-session-type))
+         (. gen (invokeInterface itaskfn-type (new Method &quot;invokeTask&quot; obj-type (into-array [obj-type]))))
+         (. gen (pop))
+         (. gen (returnValue))
+         (. gen (endMethod)))
+       ;; end of generation
+       (. cv (visitEnd))
+       ;; generate bytecode, weave and load
+       (let [bytecode (. cv toByteArray)
+             weaver (kilim.analysis.ClassWeaver. bytecode)
+             infos (.getClassInfos weaver)]
+         (doseq [info infos]
+              (let [pname (.replace (.className info) &quot;/&quot; &quot;.&quot;)]
+                (. ^DynamicClassLoader (deref clojure.lang.Compiler/LOADER) (defineClass pname (.bytes info) nil))))
+         (Class/forName (.replace cname &quot;/&quot; &quot;.&quot;))))))</pre></tr><tr><td class="docs"><p>Starts a new HTTP server for the provided HTTP pausable handler and port</p>
+</td><td class="codes" /><pre class="brush: clojure">(defn start-http-server
+  [port ^kilim.http.HttpSession handler] (kilim.http.HttpServer. port  handler))</pre></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a><div id="floating-toc"><ul><li class="floating-toc-li" id="floating-toc_kilim">kilim</li><li class="floating-toc-li" id="floating-toc_kilim.nio">kilim.nio</li></ul></div></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
        SyntaxHighlighter.all()</script></body></html>

@@ -117,8 +117,6 @@ public class KilimTransformerAgent implements ClassFileTransformer {
         /**
          * Constructs a new {@link clojure.asm.ClassAdapter} object.
          *
-         * @param cv the class visitor to which this adapter must delegate calls.
-         * @param kind
          */
         public ClojureFnAdapter(final ClassVisitor cv, String fnClassName, String kind) {
             super(cv);
@@ -277,13 +275,13 @@ public class KilimTransformerAgent implements ClassFileTransformer {
                 ClassWeaver weaver = new ClassWeaver(bytes);
                 for(ClassInfo info : weaver.getClassInfos()) {
                     String pname = info.className.replace("/",".");
-                    if(pname.equals(className)) {
+                    if(info.className.equals(className)) {
                         if(KilimTransformerAgent.shouldDebug)
-                            System.out.println("*** defining auxiliary weaved class "+className);
+                            System.out.println("*** returning weaved class "+className);
                         bytes = info.bytes;
                     } else {
                         if(KilimTransformerAgent.shouldDebug)
-                            System.out.print("*** loading weaved class "+pname);
+                            System.out.print("*** loading auxiliary weaved class "+pname);
                         loader.defineClass(pname,info.bytes,null);
                     }
                 }
@@ -392,7 +390,7 @@ public class KilimTransformerAgent implements ClassFileTransformer {
         }
 
         public void visitCode() {
-            //To change body of implemented methods use File | Settings | File Templates.
+            //ignore
         }
 
         public void visitFrame(int type, int nLocal, Object[] local, int nStack, Object[] stack) {

@@ -2,9 +2,11 @@
   <library name="Clojure-1.3">
     <CLASSES>
       <root url="file://$PROJECT_DIR$/../../../tmp/clojure-dist/clojure-1.3.0" />
+      <root url="file://$PROJECT_DIR$/../../../tmp/clojure-contrib-1.2.0/target" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/../../../tmp/clojure-contrib-1.2.0/target" recursive="false" />
     <jarDirectory url="file://$PROJECT_DIR$/../../../tmp/clojure-dist/clojure-1.3.0" recursive="false" />
   </library>
 </component>

@@ -7,6 +7,11 @@
       </element>
       <element id="module-output" name="kilim_clojure" />
       <element id="extracted-dir" path="$PROJECT_DIR$/../clojure/deps/kilim.jar" path-in-jar="/" />
+      <element id="file-copy" path="$PROJECT_DIR$/src/clj/kilim.clj" />
+      <element id="file-copy" path="$PROJECT_DIR$/project.clj" />
+      <element id="directory" name="kilim">
+        <element id="file-copy" path="$PROJECT_DIR$/src/clj/kilim/nio.clj" />
+      </element>
     </root>
   </artifact>
 </component>

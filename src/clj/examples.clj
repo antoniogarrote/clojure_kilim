@@ -1,17 +1,19 @@
 (use 'kilim)
 
+
 ;; Simple task creation test
 
 (defn actor-mbox
   ([i] (let [mbox (make-mbox)]
-       (task-start (pausable [] (let [rec (mbox-get mbox)]
-                                  (println (str "received " rec " - " i)))))
-       mbox)))
+         (task-start (pausable [] (let [rec (mbox-get mbox)]
+                                    (println (str "received " rec " - " i)))))
+         mbox)))
 
 (defn test-actor []
   (doseq [mbox (map (fn [x] (actor-mbox x)) (range 0 1000))]
-    (mbox-putnb  mbox "hi!")))
+    (mbox-put  mbox "hi!")))
 
+;(test-actor)
 
 ;; Chain example
 
@@ -20,10 +22,10 @@
      (chain prev-mbox (make-mbox)))
   ([prev-mbox next-mbox]
      (let [node (pausable []
-                    (let [rec (mbox-get prev-mbox)]
-                      (if (nil? next-mbox)
-                        (println (str rec "world"))
-                        (mbox-putnb next-mbox (str "hello " rec)))))]
+                          (let [rec (mbox-get-pausable prev-mbox)]
+                            (if (nil? next-mbox)
+                              (println (str rec "world"))
+                              (mbox-put next-mbox (str "hello " rec)))))]
        (task-start node)
        next-mbox)))
 
@@ -34,15 +36,18 @@
                                   initial-mbox
                                   (range 0 (dec chain-length)))]
        (chain prev-last-mbox nil)
-       (mbox-putnb initial-mbox "hello "))))
+       (mbox-put initial-mbox "hello "))))
+
+;(chain-example 1000)
+
 
 ;; Timed task
 
 (defn timed-task
   ([i exitmb]
-     (let [task (pausable [] (do (println (str "Task #" i " going to sleep ..."))
-                     (task-sleep 2000)
-                     (println (str "           Task #" i " waking up"))))]
+     (let [task (pausable [] (do (println (str "*** Task #" i " going to sleep ..."))
+                                 (task-sleep 2000)
+                                 (println (str "!!! Task #" i " waking up"))))]
        (-> task (task-start) (task-inform-on-exit  exitmb)))))
 
 (defn timed-task-example
@@ -50,8 +55,10 @@
      (let [exitmb (make-mbox)]
        (doseq [i (range 0 num-tasks)]
          (timed-task i exitmb))
-       (mbox-getb exitmb)
+       (mbox-get-blocking exitmb)
        (println (str "finished...")))))
+
+;(timed-task-example 10)
 
 
 ;;; Group example
@@ -59,24 +66,30 @@
 (defn group-example
   ([]
      (let [task1 (pausable [] (do (println (str "Task #" 1 " going to sleep ..."))
-                     (task-sleep 1000)
-                     (println (str "           Task #" 1 " waking up"))
-                     1))
+                                  (task-sleep 1000)
+                                  (println (str "           Task #" 1 " waking up"))
+                                  (task-return "RETURNING 1")))
            task2 (pausable [] (do (println (str "Task #" 2 " going to sleep ..."))
-                     (task-sleep 1000)
-                     (println (str "           Task #" 2 " waking up"))
-                     2))
+                                  (task-sleep 1000)
+                                  (println (str "           Task #" 2 " waking up"))
+                                  (task-return "RETURNING 2")))
            results (-> (make-task-group)
                        (task-group-add (task-start task1))
                        (task-group-add (task-start task2))
-                       (task-group-join)
+                       (task-group-join-blocking)
                        (task-group-results))]
        (println (str "finished -> " results)))))
 
+(group-example)
 
 ;; Generators
 
-(start-generator  (generator [g] (generator-yield g 1) (generator-yield g 2)))
+(def ^:dynamic *test-generator* (generator-start  (generator [g] (generator-yield g 1) (generator-yield g 2))))
+
+(println (str "*** should be true --> "
+              (= 3 (+ (generator-next *test-generator*)
+                      (generator-next *test-generator*)))))
+
 
 (def-generator fib [g]
   (generator-yield g java.math.BigInteger/ZERO)
@@ -85,12 +98,46 @@
     (generator-yield g j)
     (recur j (.add i j))))
 
-
-
 (defn test-generator
   ([] (let [g (generator-seq fib)]
         (doseq [n (take 100 g)]
           (println (str "GOT " n))))))
 
+(println (str "SOME FIB NUMBERS: " (vec (take 100 (generator-seq fib)))))
 
-(println (str "SOME FIB NUMBERS " (vec (take 100 (generator-seq fib)))))
+
+;;
+;; Kilim NIO exmaples
+;;
+
+
+(use 'kilim.nio)
+
+;; Socket server
+
+(start-socket-server 5019
+                     (socket-server (pausable [ep]
+                                              (loop []
+                                                (let [buffer (java.nio.ByteBuffer/allocate 10)]
+                                                  (. ep (fill buffer 10))
+                                                  (.flip buffer)
+                                                  (. ep (write buffer))
+                                                  (recur))))))
+
+;; Simple HTTP server
+
+(def echo-handler
+  (http-handler (pausable [^kilim.http.HttpSession session]
+                          (let [req (kilim.http.HttpRequest.)
+                                resp (kilim.http.HttpResponse.)]
+                            (loop []
+                              (.readRequest session req)
+                              (let [pw (java.io.PrintWriter. (.getOutputStream resp))]
+                                (.append pw (str "<html><body><h1>Request!</h1> <br/> <p>Path: " (.uriPath req) "</p></body></html>"))
+                                (.flush pw)
+                                (.sendResponse session resp)
+                                (if (.keepAlive req)
+                                  (recur)
+                                  (println "ending execution"))))))))
+
+;(start-http-server 7302  echo-handler)

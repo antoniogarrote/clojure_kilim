@@ -338,7 +338,6 @@ public static Object setInstanceField(Object target, String fieldName, Object va
 */
 public static Object invokeNoArgInstanceMember(Object target, String name) throws Pausable {
 	//favor method over field
-    System.out.println("Kilim Reflection");
 	List meths = getMethods(target.getClass(), 0, name, false);
 	if(meths.size() > 0)
 		return invokeMatchingMethod(name, meths, target, clojure.lang.RT.EMPTY_ARRAY);

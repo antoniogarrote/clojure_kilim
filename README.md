@@ -16,17 +16,17 @@ Documentation: http://antoniogarrote.github.com/clojure_kilim/
 
  - Simple task:
 
-   (use 'kilim)
-
-   (defn actor-mbox
-     ([i] (let [mbox (make-mbox)]
-            (task-start (pausable [] (let [rec (mbox-get mbox)]
-                                       (println (str "received " rec " - " i)))))
-            mbox)))
-    
-   (defn test-actor []
-     (doseq [mbox (map (fn [x] (actor-mbox x)) (range 0 1000))]
-       (mbox-put  mbox "hi!")))
+       (use 'kilim)
+        
+       (defn actor-mbox
+         ([i] (let [mbox (make-mbox)]
+                (task-start (pausable [] (let [rec (mbox-get mbox)]
+                                           (println (str "received " rec " - " i)))))
+                mbox)))
+        
+       (defn test-actor []
+         (doseq [mbox (map (fn [x] (actor-mbox x)) (range 0 1000))]
+           (mbox-put  mbox "hi!")))
 
   - Chain example:
 

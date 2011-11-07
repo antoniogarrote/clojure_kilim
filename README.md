@@ -10,6 +10,8 @@ JVM options:
 
     :jvm-opts ["-javaagent:/Users/antonio/Desktop/kilimtest/lib/clj-kilim-0.2.0-20111019.122151-1.jar"]
 
+Documentation: http://antoniogarrote.github.com/clojure_kilim/
+
 ## Examples
 
  - Simple task:

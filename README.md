@@ -1,4 +1,4 @@
-### Kilim/Clojure integration
+# Kilim/Clojure integration
 
 ## USE:
 
@@ -14,21 +14,21 @@ Documentation: http://antoniogarrote.github.com/clojure_kilim/
 
 ## Examples
 
- - Simple task:
+###Simple task:
 
-       (use 'kilim)
-        
-       (defn actor-mbox
-         ([i] (let [mbox (make-mbox)]
-                (task-start (pausable [] (let [rec (mbox-get mbox)]
-                                           (println (str "received " rec " - " i)))))
-                mbox)))
-        
-       (defn test-actor []
-         (doseq [mbox (map (fn [x] (actor-mbox x)) (range 0 1000))]
-           (mbox-put  mbox "hi!")))
+    (use 'kilim)
+     
+    (defn actor-mbox
+      ([i] (let [mbox (make-mbox)]
+             (task-start (pausable [] (let [rec (mbox-get mbox)]
+                                        (println (str "received " rec " - " i)))))
+             mbox)))
+     
+    (defn test-actor []
+      (doseq [mbox (map (fn [x] (actor-mbox x)) (range 0 1000))]
+        (mbox-put  mbox "hi!")))
 
-  - Chain example:
+###Chain example:
 
     (defn chain
       ([prev-mbox]
@@ -51,7 +51,7 @@ Documentation: http://antoniogarrote.github.com/clojure_kilim/
            (chain prev-last-mbox nil)
            (mbox-put initial-mbox "hello "))))
 
-  - Timed task:
+###Timed task:
 
     (defn timed-task
       ([i exitmb]
@@ -68,7 +68,7 @@ Documentation: http://antoniogarrote.github.com/clojure_kilim/
            (mbox-get-blocking exitmb)
            (println (str "finished...")))))
 
-  - Group example:
+###Group example:
 
     (defn group-example
       ([]
@@ -87,7 +87,7 @@ Documentation: http://antoniogarrote.github.com/clojure_kilim/
                            (task-group-results))]
            (println (str "finished -> " results)))))
 
-  - Generators:
+###Generators:
 
     (def ^:dynamic *test-generator* (generator-start  (generator [g] (generator-yield g 1) (generator-yield g 2))))
      
@@ -110,7 +110,7 @@ Documentation: http://antoniogarrote.github.com/clojure_kilim/
      
     (println (str "SOME FIB NUMBERS: " (vec (take 100 (generator-seq fib)))))
 
- - Socket server:
+###Socket server:
 
     (use 'kilim.nio)
      
@@ -125,7 +125,7 @@ Documentation: http://antoniogarrote.github.com/clojure_kilim/
                                                       (. ep (write buffer))
                                                       (recur))))))
 
- - HTTP server:
+###HTTP server:
 
     (def echo-handler
       (http-handler (pausable [^kilim.http.HttpSession session]

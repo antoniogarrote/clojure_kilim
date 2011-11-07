@@ -12,6 +12,8 @@ JVM options:
 
 Documentation: http://antoniogarrote.github.com/clojure_kilim/
 
+Some slides about the project: http://www.slideshare.net/antoniogarrote/message-passing-concurrency-in-clojure-using-kilim
+
 ## Examples
 
 ###Simple task:
